@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../context/AuthContext'
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false)
@@ -8,22 +9,23 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const { refreshSession } = useAuth()
 
   const submitHandler = async (e) => {
     e.preventDefault()
-    setLoading(true)
     try {
+      setLoading(true)
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/users/login`,
         { email, password },
         { withCredentials: true }
       )
       if (response.status === 200) {
+        await refreshSession()
         navigate('/dashboard')
       }
-    } catch (error) {
-      console.error('Login failed', error)
-      setError(error?.response?.data?.message || 'Login failed')
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -65,7 +67,7 @@ const LoginPage = () => {
               placeholder='password'
             />
           </div>
-          <button disabled={loading} className='w-full inline-flex justify-center items-center gap-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-semibold rounded-xl px-4 py-3 text-lg shadow-md hover:shadow-lg transition-shadow disabled:opacity-60'>
+          <button className='w-full inline-flex justify-center items-center gap-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-semibold rounded-xl px-4 py-3 text-lg shadow-md hover:shadow-lg transition-shadow disabled:opacity-60'>
             {loading ? 'Signing in...' : 'Login'}
           </button>
           <p className='text-center text-sm text-gray-600 dark:text-gray-300'>New here? <Link to='/signup' className='text-indigo-600 font-semibold'>Create new Account</Link></p>

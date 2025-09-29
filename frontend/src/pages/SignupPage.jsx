@@ -59,6 +59,8 @@ const SignupPage = () => {
         { withCredentials: true }
       )
       if (response.status === 201) {
+        // Confirm session cookie by pinging profile, then go to dashboard
+        try { await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, { withCredentials: true }) } catch (_) {}
         navigate('/dashboard')
       }
     } catch (err) {
