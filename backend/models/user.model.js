@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
         type: String
     },
     interests:{
-       type: String,
+       type: [String],
         required: true,
         enum :  [
     'Technology', 'Business', 'Arts', 'Sports', 'Science', 'Music',

@@ -6,8 +6,6 @@ const InputField = ({
   label,
   type = 'text',
   placeholder,
-  value,
-  onChange,
   error,
   required = false,
   disabled = false,
@@ -33,8 +31,6 @@ const InputField = ({
         <motion.input
           type={inputType}
           placeholder={placeholder}
-          value={value}
-          onChange={onChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           disabled={disabled}
