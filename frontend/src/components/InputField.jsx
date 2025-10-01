@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
-const InputField = ({
+const InputField = React.forwardRef(({
   label,
   type = 'text',
   placeholder,
@@ -11,7 +11,7 @@ const InputField = ({
   disabled = false,
   className = '',
   ...props
-}) => {
+}, ref) => {
   const [showPassword, setShowPassword] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
 
@@ -29,6 +29,7 @@ const InputField = ({
       
       <div className="relative">
         <motion.input
+          ref={ref}
           type={inputType}
           placeholder={placeholder}
           onFocus={() => setIsFocused(true)}
@@ -75,6 +76,6 @@ const InputField = ({
       )}
     </div>
   )
-}
+})
 
 export default InputField

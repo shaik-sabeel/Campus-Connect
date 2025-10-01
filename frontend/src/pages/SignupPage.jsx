@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../context/AuthContext'
+import { motion } from 'framer-motion'; // NEW for animations
 
 const SignupPage = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { refreshSession } = useAuth()
   
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -17,12 +20,14 @@ const SignupPage = () => {
   const [interestsSelected, setInterestsSelected] = useState([])
   const [terms, setTerms] = useState(false)
   const [error, setError] = useState('')
-   const [ userData, setUserData ] = useState({})
+  // Removed [userData, setUserData] = useState({}) as it's not directly used for registration form
 
   const interests = [
     'Technology', 'Business', 'Arts', 'Sports', 'Science', 'Music',
     'Photography', 'Writing', 'Volunteering', 'Entrepreneurship',
-    'Research', 'Design', 'Gaming', 'Travel', 'Food', 'Fitness'
+    'Research', 'Design', 'Gaming', 'Travel', 'Food', 'Fitness',
+    'Networking', 'Career', 'Academic', 'Social', 'Workshop', // Expanded list
+    'Conference', 'Seminar', 'Meetup', 'Competition', 'Exhibition' // Expanded list
   ]
 
   const departments = [
@@ -32,14 +37,31 @@ const SignupPage = () => {
   ]
 
   const years = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate', 'PhD']
-
   
-
-
   const submitHandler = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    
+    // Validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+    
+    if (interestsSelected.length < 1) {
+      setError('Please select at least one interest')
+      setLoading(false)
+      return
+    }
+    
+    if (!terms) {
+      setError('Please accept the terms and conditions')
+      setLoading(false)
+      return
+    }
+    
     try {
       const newUser = {
         fullname: {
@@ -50,38 +72,31 @@ const SignupPage = () => {
         password,
         department,
         academicYear: year,
-        studentID: studentId || '',
+        studentID: studentId || '', // Student ID is optional as per backend
         interests: interestsSelected
       }
+      
+      console.log('Sending registration data:', newUser)
+      
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/users/register`,
         newUser,
         { withCredentials: true }
       )
+      
+      console.log('Registration response:', response.data)
+      
       if (response.status === 201) {
-        // Confirm session cookie by pinging profile, then go to dashboard
-        try { await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, { withCredentials: true }) } catch (_) {}
-        navigate('/dashboard')
+        await refreshSession()
+        navigate('/dashboard') // MODIFIED: Navigate to Dashboard after registration
       }
     } catch (err) {
       console.error('Signup failed', err)
-      setError(err?.response?.data?.message || 'Signup failed')
+      setError(err?.response?.data?.message || err?.response?.data?.errors?.[0]?.msg || 'Signup failed')
     } finally {
-      setEmail('')
-      setFirstName('')
-      setLastName('')
-      setPassword('')
-      setConfirmPassword('')
-      setDepartment('')
-      setYear('')
-      setStudentId('')
-      setInterestsSelected([])
-      setTerms(false)
       setLoading(false)
     }
   }
-
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 flex items-center justify-center p-6 py-9">
@@ -92,11 +107,15 @@ const SignupPage = () => {
         </div>
 
         {error && (
-          <div className="px-8 pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="px-8 pt-4"
+          >
             <div className="text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2">
               {error}
             </div>
-          </div>
+          </motion.div>
         )}
 
         <form onSubmit={submitHandler} className="px-8 py-6 space-y-6">
@@ -231,6 +250,11 @@ const SignupPage = () => {
                 )
               })}
             </div>
+            {interestsSelected.length < 1 && error.includes('interest') && ( // NEW: Display error if no interests
+                <motion.p initial={{opacity:0}} animate={{opacity:1}} className="text-red-500 text-sm mt-2">
+                    Please select at least one interest.
+                </motion.p>
+            )}
           </div>
 
           <div className='flex items-start gap-3'>
@@ -245,6 +269,12 @@ const SignupPage = () => {
               I agree to the <span className='underline'>Terms of Service</span> and <span className='underline'>Privacy Policy</span>
             </label>
           </div>
+            {!terms && error.includes('terms') && ( // NEW: Display error if terms not accepted
+                <motion.p initial={{opacity:0}} animate={{opacity:1}} className="text-red-500 text-sm mt-[-10px] pl-6">
+                    {error}
+                </motion.p>
+            )}
+
 
           <button disabled={loading} className='w-full inline-flex justify-center items-center gap-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-semibold rounded-xl px-4 py-3 text-lg shadow-md hover:shadow-lg transition-shadow disabled:opacity-60'>
             {loading ? 'Creating...' : 'Create account'}

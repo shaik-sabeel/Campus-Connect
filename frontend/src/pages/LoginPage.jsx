@@ -9,12 +9,13 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { refreshSession } = useAuth()
+  const { refreshSession, user } = useAuth() // Access user from AuthContext
 
   const submitHandler = async (e) => {
     e.preventDefault()
+    setError('')
+    setLoading(true)
     try {
-      setLoading(true)
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/users/login`,
         { email, password },
@@ -22,9 +23,20 @@ const LoginPage = () => {
       )
       if (response.status === 200) {
         await refreshSession()
-        navigate('/dashboard')
+        // Check if the logged-in user is an admin and redirect to admin dashboard
+        // Note: The `user` state might not be updated immediately after `refreshSession` in the same render cycle,
+        // so it's safer to get user role from a direct state passed from refreshSession or wait for effect.
+        // For simplicity now, assuming `refreshSession` does update `user` state.
+        // A more robust check might involve getting the role directly from `response.data.user.role` or using a timeout for `user` update.
+        // Assuming AuthContext's user state update is quick.
+        if (response.data.user && response.data.user.role === 'admin') {
+            navigate('/admin/dashboard');
+        } else {
+            navigate('/dashboard'); // MODIFIED: Navigate to Dashboard for regular users
+        }
       }
     } catch (err) {
+      console.error('Login failed', err)
       setError(err?.response?.data?.message || 'Login failed')
     } finally {
       setLoading(false)
@@ -39,11 +51,15 @@ const LoginPage = () => {
           <p className="mt-2 text-gray-600 dark:text-gray-300">Sign in to your Campus Connect account</p>
         </div>
         {error && (
-          <div className="px-8 pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="px-8 pt-4"
+          >
             <div className="text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2">
               {error}
             </div>
-          </div>
+          </motion.div>
         )}
         <form onSubmit={submitHandler} className="px-8 py-6 space-y-6">
           <div>

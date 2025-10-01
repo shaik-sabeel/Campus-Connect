@@ -2,12 +2,12 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import Button from '../components/Button'
-import { 
-  Calendar, 
-  Users, 
-  Zap, 
-  Globe, 
-  Star, 
+import {
+  Calendar,
+  Users,
+  Zap,
+  Globe,
+  Star,
   ArrowRight,
   CheckCircle,
   Sparkles
@@ -71,15 +71,15 @@ const LandingPage = () => {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-600"></div>
-        
+
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
           <motion.div
-            animate={{ 
+            animate={{
               scale: [1, 1.2, 1],
               opacity: [0.3, 0.6, 0.3]
             }}
-            transition={{ 
+            transition={{
               duration: 8,
               repeat: Infinity,
               ease: "easeInOut"
@@ -87,11 +87,11 @@ const LandingPage = () => {
             className="absolute top-20 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl"
           />
           <motion.div
-            animate={{ 
+            animate={{
               scale: [1.2, 1, 1.2],
               opacity: [0.4, 0.7, 0.4]
             }}
-            transition={{ 
+            transition={{
               duration: 6,
               repeat: Infinity,
               ease: "easeInOut"
@@ -99,11 +99,11 @@ const LandingPage = () => {
             className="absolute top-40 right-20 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl"
           />
           <motion.div
-            animate={{ 
+            animate={{
               scale: [1, 1.3, 1],
               opacity: [0.2, 0.5, 0.2]
             }}
-            transition={{ 
+            transition={{
               duration: 10,
               repeat: Infinity,
               ease: "easeInOut"
@@ -130,14 +130,14 @@ const LandingPage = () => {
                 <Sparkles className="w-6 h-6 text-yellow-300" />
                 <span className="text-yellow-300 font-semibold">Welcome to the Future</span>
               </motion.div>
-              
+
               <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
                 Campus
                 <span className="block bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
                   Connect
                 </span>
               </h1>
-              
+
               <p className="text-xl lg:text-2xl text-blue-100 leading-relaxed">
                 Your smart hub for discovering events, networking with peers, and unlocking opportunities across campus.
               </p>
@@ -187,15 +187,15 @@ const LandingPage = () => {
                   <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Users className="w-16 h-16" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">3D Scene</h3>
+                  <h3 className="text-2xl font-bold mb-2">3D Scene Placeholder</h3>
                   <p className="text-white/80">Interactive 3D model would be here</p>
                   <p className="text-sm text-white/60 mt-2">
-                    Replace with your Spline scene URL
+                    (See spline-integration-guide.js for instructions)
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Floating Elements */}
             <motion.div
               animate={{ y: [-10, 10, -10] }}
@@ -204,7 +204,7 @@ const LandingPage = () => {
             >
               <Star className="w-8 h-8 text-white" />
             </motion.div>
-            
+
             <motion.div
               animate={{ y: [10, -10, 10] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -242,7 +242,7 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0.2 }} // Increased amount
             className="text-center mb-16"
           >
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
@@ -261,7 +261,7 @@ const LandingPage = () => {
                   key={feature.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  viewport={{ once: true, amount: 0.2 }}
                   transition={{ delay: index * 0.1 }}
                   className="card p-6 text-center group hover:shadow-2xl"
                 >
@@ -290,7 +290,7 @@ const LandingPage = () => {
                 key={stat.label}
                 initial={{ opacity: 0, scale: 0.5 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, amount: 0.2 }}
                 transition={{ delay: index * 0.1 }}
                 className="text-center text-white"
               >
@@ -308,7 +308,7 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0.2 }}
             className="text-center mb-16"
           >
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
@@ -325,7 +325,7 @@ const LandingPage = () => {
                 key={testimonial.name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, amount: 0.2 }}
                 transition={{ delay: index * 0.1 }}
                 className="card p-6"
               >
@@ -364,7 +364,7 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0.2 }}
             className="text-white space-y-8"
           >
             <h2 className="text-4xl lg:text-5xl font-bold">
@@ -386,7 +386,7 @@ const LandingPage = () => {
                 </Button>
               </Link>
             </div>
-            
+
             <div className="flex items-center justify-center space-x-6 text-blue-100">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5" />

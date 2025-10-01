@@ -8,8 +8,8 @@ const ProtectedRoute = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-10 w-10 rounded-full border-4 border-indigo-600 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900"> {/* Added dark mode support */}
+        <div className="animate-spin h-10 w-10 rounded-full border-4 border-purple-600 dark:border-blue-600 border-t-transparent" />
       </div>
     )
   }
@@ -22,5 +22,3 @@ const ProtectedRoute = () => {
 }
 
 export default ProtectedRoute
-
-

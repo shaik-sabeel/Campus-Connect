@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        select: false,
+        select: false, // Don't return password by default
     },
     department: {
         type: String,
@@ -38,21 +38,57 @@ const userSchema = new mongoose.Schema({
         enum : ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate', 'PhD']
     },
     studentID: {
-        type: String
+        type: String,
+        default: '' // Can be optional during registration
     },
     interests:{
        type: [String],
         required: true,
-        enum :  [
-    'Technology', 'Business', 'Arts', 'Sports', 'Science', 'Music',
-    'Photography', 'Writing', 'Volunteering', 'Entrepreneurship',
-    'Research', 'Design', 'Gaming', 'Travel', 'Food', 'Fitness'
+        enum :  [ // Expanded interests list
+    'Technology', 'Business', 'Arts', 'Sports', 'Science', 'Music', 'Photography', 'Writing', 'Volunteering', 'Entrepreneurship', 'Research', 'Design', 'Gaming', 'Travel', 'Food', 'Fitness', 'Networking', 'Career', 'Academic', 'Social', 'Workshop', 'Conference', 'Seminar', 'Meetup', 'Competition', 'Exhibition'
   ]
-    }
-})
+    },
+    avatar: {
+        type: String,
+        default: '' // Default profile image
+    },
+    bio: {
+        type: String,
+        default: ''
+    },
+    contactInfo: { // NEW: Contact info to display on profile
+        type: String,
+        default: ''
+    },
+    socialLinks: { // Allows users to share their LinkedIn, GitHub etc.
+        linkedin: { type: String, default: '' },
+        github: { type: String, default: '' },
+        twitter: { type: String, default: '' }
+    },
+    achievements: [{ // List of achievements, can be populated by system
+        title: { type: String, required: true },
+        description: { type: String, default: '' },
+        icon: { type: String, default: 'Award' }, // e.g., Lucide icon name
+        earnedDate: { type: Date, default: Date.now },
+        color: { type: String, default: 'from-purple-600 to-blue-600' } // Tailwind gradient classes
+    }],
+    // NEW: Role for admin access
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    // NEW: For social connections / networking features
+    connections: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
+    }]
+}, {
+    timestamps: true
+});
 
 userSchema.methods.generateAuthToken = function () {
-    const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ _id: this._id, role: this.role }, process.env.JWT_SECRET, { expiresIn: '24h' }); // Include role in token
     return token;
 }
 

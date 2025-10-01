@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import Button from '../components/Button'
 import InputField from '../components/InputField'
+import axios from 'axios'
 import { 
   User, 
   Mail, 
@@ -29,82 +30,77 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm()
+  const [serverError, setServerError] = useState('')
 
-  // Mock user data
-  const userData = {
-    firstName: 'Sabeel',
-    lastName: 'Ahmed',
-    email: 'sabeel.ahmed@university.edu',
-    department: 'Computer Science',
-    year: 'Junior',
-    studentId: 'CS2021001',
-    bio: 'Passionate computer science student with interests in AI, machine learning, and web development. Always eager to learn new technologies and connect with like-minded individuals.',
-    interests: ['Technology', 'AI', 'Machine Learning', 'Web Development', 'Entrepreneurship'],
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-    joinDate: '2021-09-01',
-    location: 'Campus City, State',
-    phone: '+1 (555) 123-4567',
-    socialLinks: {
-      linkedin: 'https://linkedin.com/in/sabeel-ahmed',
-      github: 'https://github.com/sabeel-ahmed',
-      twitter: 'https://twitter.com/sabeel_ahmed'
+  const [userData, setUserData] = useState(null)
+  const [userEvents, setUserEvents] = useState([])
+  const [eventsLoading, setEventsLoading] = useState(true)
+  const [eventsError, setEventsError] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, { withCredentials: true })
+        const u = res.data?.user
+        setUserData(u)
+        setValue('firstName', u?.fullname?.firstname || '')
+        setValue('lastName', u?.fullname?.lastname || '')
+        setValue('email', u?.email || '')
+        setValue('department', u?.department || '')
+        setValue('year', u?.academicYear || '')
+        setValue('bio', u?.bio || '')
+      } catch (e) {
+        setServerError('Failed to load profile')
+      }
     }
-  }
+    load()
+  }, [setValue])
+
+  // Fetch user events (created & attended)
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true)
+      setEventsError('')
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/events/user/events`, { withCredentials: true })
+        const events = res.data?.events || []
+        setUserEvents(events)
+      } catch (e) {
+        setEventsError('Failed to load your events')
+      } finally {
+        setEventsLoading(false)
+      }
+    }
+    fetchEvents()
+  }, [])
+
+  // Derived dynamic stats from real data
+  const eventsAttended = userEvents.filter(e => Array.isArray(e.attendees) && e.attendees.some(a => (a?._id || a)?.toString() === (userData?._id || '').toString()) && e.organizer?._id?.toString() !== userData?._id?.toString()).length
+  const eventsCreated = userEvents.filter(e => e.organizer?._id?.toString() === userData?._id?.toString()).length
+  const connectionsCount = Array.isArray(userData?.connections) ? userData.connections.length : 0
+  const achievementsCount = Array.isArray(userData?.achievements) ? userData.achievements.length : 0
 
   const stats = [
-    { label: 'Events Attended', value: '24', icon: CalendarIcon },
-    { label: 'Events Created', value: '3', icon: Users },
-    { label: 'Connections', value: '156', icon: Users },
-    { label: 'Achievements', value: '8', icon: Award }
+    { label: 'Events Attended', value: eventsAttended, icon: CalendarIcon },
+    { label: 'Connections', value: connectionsCount, icon: Users },
+    { label: 'Events Created', value: eventsCreated, icon: Users },
+    { label: 'Achievements', value: achievementsCount, icon: Award }
   ]
 
-  const achievements = [
-    {
-      title: 'Event Organizer',
-      description: 'Successfully organized 3+ events',
-      icon: Award,
-      earnedDate: '2024-01-10',
-      color: 'from-purple-600 to-blue-600'
-    },
-    {
-      title: 'Social Butterfly',
-      description: 'Connected with 100+ students',
-      icon: Users,
-      earnedDate: '2024-01-05',
-      color: 'from-green-600 to-emerald-600'
-    },
-    {
-      title: 'Tech Enthusiast',
-      description: 'Attended 10+ tech events',
-      icon: CalendarIcon,
-      earnedDate: '2023-12-20',
-      color: 'from-blue-600 to-indigo-600'
-    }
-  ]
-
-  const recentEvents = [
-    {
-      id: 1,
-      title: 'Tech Innovation Workshop',
-      date: '2024-01-15',
-      type: 'attended',
-      image: 'https://picsum.photos/100/100?random=1'
-    },
-    {
-      id: 2,
-      title: 'Career Fair 2024',
-      date: '2024-01-18',
-      type: 'attended',
-      image: 'https://picsum.photos/100/100?random=2'
-    },
-    {
-      id: 3,
-      title: 'Study Group Meetup',
-      date: '2024-01-20',
-      type: 'created',
-      image: 'https://picsum.photos/100/100?random=3'
-    }
-  ]
+  // Recent activity from real events (mix of created and attended)
+  const recentActivities = [...userEvents]
+    .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+    .slice(0, 5)
+    .map(evt => {
+      const isCreator = evt.organizer?._id?.toString() === userData?._id?.toString()
+      return {
+        id: evt._id,
+        title: evt.title,
+        date: evt.createdAt || evt.date,
+        type: isCreator ? 'created' : 'attended',
+        image: evt.image || `https://picsum.photos/100/100?random=${evt._id}`
+      }
+    })
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
@@ -115,19 +111,52 @@ const ProfilePage = () => {
 
   const onSubmit = async (data) => {
     setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
+    setServerError('')
+    try {
+      const updates = {
+        bio: data.bio,
+        department: data.department,
+        academicYear: data.year,
+        'socialLinks.linkedin': data.linkedin,
+        'socialLinks.github': data.github,
+        'socialLinks.twitter': data.twitter
+      }
+      const res = await axios.put(`${import.meta.env.VITE_BASE_URL}/users/profile`, updates, { withCredentials: true })
+      setUserData(res.data?.user)
       setIsEditing(false)
-    }, 2000)
+    } catch (e) {
+      setServerError('Failed to update profile')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0]
     if (file) {
-      // In real app, upload to server and update user avatar
-      console.log('Upload image:', file)
+      try {
+        const fd = new FormData()
+        fd.append('image', file)
+        const up = await axios.post(`${import.meta.env.VITE_BASE_URL}/upload`, fd, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } })
+        const url = up.data?.url
+        if (url) {
+          const res = await axios.put(`${import.meta.env.VITE_BASE_URL}/users/profile/avatar`, { url }, { withCredentials: true })
+          setUserData(res.data?.user)
+        }
+      } catch (e) {
+        setServerError('Failed to upload avatar')
+      }
     }
+  }
+
+  // Guard: show loader while userData is being fetched
+  if (!userData) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center dark:bg-gray-900">
+        <div className="animate-spin h-10 w-10 rounded-full border-4 border-purple-600 border-t-transparent" />
+        <span className="ml-3 text-lg text-gray-700 dark:text-gray-300">Loading profile...</span>
+      </div>
+    )
   }
 
   return (
@@ -143,7 +172,7 @@ const ProfilePage = () => {
             {/* Avatar */}
             <div className="relative">
               <img
-                src={userData.avatar}
+                src={userData?.avatar || 'https://placehold.co/200x200?text=Avatar'}
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover"
               />
@@ -167,13 +196,13 @@ const ProfilePage = () => {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {userData.firstName} {userData.lastName}
+                  {userData?.fullname?.firstname} {userData?.fullname?.lastname}
                   </h1>
                   <p className="text-lg text-gray-600 dark:text-gray-300">
-                    {userData.department} • {userData.year}
+                    {userData?.department} • {userData?.academicYear}
                   </p>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Member since {new Date(userData.joinDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    Joined {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}
                   </p>
                 </div>
                 <div className="flex space-x-2">
@@ -193,12 +222,12 @@ const ProfilePage = () => {
               </div>
 
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                {userData.bio}
+                {userData?.bio || ''}
               </p>
 
               {/* Interests */}
               <div className="flex flex-wrap gap-2">
-                {userData.interests.map((interest, index) => (
+                {(userData?.interests || []).map((interest, index) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm rounded-full"
@@ -264,7 +293,7 @@ const ProfilePage = () => {
                             <Icon className="w-8 h-8 text-white" />
                           </div>
                           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {stat.value}
+                            {eventsLoading ? '—' : stat.value}
                           </div>
                           <div className="text-sm text-gray-600 dark:text-gray-300">
                             {stat.label}
@@ -280,32 +309,40 @@ const ProfilePage = () => {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                     Recent Activity
                   </h2>
-                  <div className="space-y-4">
-                    {recentEvents.map((event, index) => (
-                      <div key={event.id} className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {event.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                            {event.type === 'attended' ? 'Attended' : 'Created'} • {new Date(event.date).toLocaleDateString()}
-                          </p>
+                  {eventsLoading ? (
+                    <div className="text-center text-gray-600 dark:text-gray-400 py-8">Loading activity...</div>
+                  ) : eventsError ? (
+                    <div className="text-center text-red-600 dark:text-red-400 py-8">{eventsError}</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentActivities.length > 0 ? recentActivities.map((event, index) => (
+                        <div key={event.id} className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                          <img
+                            src={event.image}
+                            alt={event.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {event.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              {event.type === 'attended' ? 'Attended' : 'Created'} • {new Date(event.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            event.type === 'attended' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          }`}>
+                            {event.type === 'attended' ? 'Attended' : 'Created'}
+                          </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          event.type === 'attended' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        }`}>
-                          {event.type === 'attended' ? 'Attended' : 'Created'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                      )) : (
+                        <div className="text-center text-gray-600 dark:text-gray-400 py-8">No recent activity.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -320,32 +357,46 @@ const ProfilePage = () => {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                   Your Events
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {recentEvents.map((event, index) => (
-                    <div key={event.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden">
-                      <img
-                        src={event.image}
-                        alt={event.title}
-                        className="w-full h-32 object-cover"
-                      />
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                          {event.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          {new Date(event.date).toLocaleDateString()}
-                        </p>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          event.type === 'attended' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        }`}>
-                          {event.type === 'attended' ? 'Attended' : 'Created'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {eventsLoading ? (
+                  <div className="text-center text-gray-600 dark:text-gray-400 py-8">Loading events...</div>
+                ) : eventsError ? (
+                  <div className="text-center text-red-600 dark:text-red-400 py-8">{eventsError}</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {userEvents.length > 0 ? userEvents.map((event, index) => {
+                      const isCreator = event.organizer?._id?.toString() === userData?._id?.toString()
+                      return (
+                        <div key={event._id || index} className="bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden">
+                          <img
+                            src={event.image || `https://picsum.photos/400/200?random=${event._id}`}
+                            alt={event.title}
+                            className="w-full h-32 object-cover"
+                          />
+                          <div className="p-4">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                              {event.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                              {event.date ? new Date(event.date).toLocaleDateString() : ''}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                isCreator 
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              }`}>
+                                {isCreator ? 'Created' : 'Attended'}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{event.status}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }) : (
+                      <div className="text-center text-gray-600 dark:text-gray-400 py-8 col-span-full">No events yet.</div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -360,25 +411,29 @@ const ProfilePage = () => {
                   Achievements
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {achievements.map((achievement, index) => {
-                    const Icon = achievement.icon
+                  {(userData?.achievements || []).length > 0 ? (userData.achievements).map((achievement, index) => {
+                    const Icon = Award
                     return (
                       <div key={index} className="text-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl">
-                        <div className={`w-16 h-16 bg-gradient-to-r ${achievement.color} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                        <div className={`w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
                           <Icon className="w-8 h-8 text-white" />
                         </div>
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                          {achievement.title}
+                          {achievement.title || 'Achievement'}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          {achievement.description}
+                          {achievement.description || ''}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Earned {new Date(achievement.earnedDate).toLocaleDateString()}
-                        </p>
+                        {achievement.earnedDate && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Earned {new Date(achievement.earnedDate).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     )
-                  })}
+                  }) : (
+                    <div className="text-center text-gray-600 dark:text-gray-400 py-8 col-span-full">No achievements yet.</div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -400,14 +455,14 @@ const ProfilePage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <InputField
                           label="First Name"
-                          defaultValue={userData.firstName}
+                          defaultValue={userData?.fullname?.firstname || ''}
                           {...register('firstName', { required: 'First name is required' })}
                           error={errors.firstName?.message}
                           required
                         />
                         <InputField
                           label="Last Name"
-                          defaultValue={userData.lastName}
+                          defaultValue={userData?.fullname?.lastname || ''}
                           {...register('lastName', { required: 'Last name is required' })}
                           error={errors.lastName?.message}
                           required
@@ -417,7 +472,7 @@ const ProfilePage = () => {
                       <InputField
                         label="Email"
                         type="email"
-                        defaultValue={userData.email}
+                        defaultValue={userData?.email || ''}
                         {...register('email', { 
                           required: 'Email is required',
                           pattern: {
@@ -435,7 +490,7 @@ const ProfilePage = () => {
                             Department
                           </label>
                           <select
-                            defaultValue={userData.department}
+                            defaultValue={userData?.department || ''}
                             {...register('department')}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
                           >
@@ -451,7 +506,7 @@ const ProfilePage = () => {
                             Academic Year
                           </label>
                           <select
-                            defaultValue={userData.year}
+                            defaultValue={userData?.academicYear || ''}
                             {...register('year')}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
                           >
@@ -469,7 +524,7 @@ const ProfilePage = () => {
                           Bio
                         </label>
                         <textarea
-                          defaultValue={userData.bio}
+                          defaultValue={userData?.bio || ''}
                           {...register('bio')}
                           rows={4}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
@@ -574,19 +629,19 @@ const ProfilePage = () => {
                 <div className="flex items-center space-x-3">
                   <Mail className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {userData.email}
+                    {userData?.email || ''}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {userData.location}
+                    {userData?.location || ''}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <GraduationCap className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {userData.studentId}
+                    {userData?.studentId || ''}
                   </span>
                 </div>
               </div>
@@ -604,7 +659,7 @@ const ProfilePage = () => {
               </h3>
               <div className="space-y-3">
                 <a
-                  href={userData.socialLinks.linkedin}
+                  href={userData?.socialLinks?.linkedin || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-3 text-blue-600 hover:text-blue-700 transition-colors"
@@ -615,7 +670,7 @@ const ProfilePage = () => {
                   <span className="text-sm">LinkedIn</span>
                 </a>
                 <a
-                  href={userData.socialLinks.github}
+                  href={userData?.socialLinks?.github || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-3 text-gray-600 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 transition-colors"
@@ -626,7 +681,7 @@ const ProfilePage = () => {
                   <span className="text-sm">GitHub</span>
                 </a>
                 <a
-                  href={userData.socialLinks.twitter}
+                  href={userData?.socialLinks?.twitter || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-3 text-blue-400 hover:text-blue-500 transition-colors"
